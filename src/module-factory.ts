@@ -1,4 +1,4 @@
-import { Store, Module as StoreModule, GetterTree, ActionContext, Dispatch, Commit } from "vuex";
+import { Store, Module as StoreModule, GetterTree, ActionContext, Dispatch, Commit, ModuleOptions as VuexModuleOptions } from "vuex";
 import { WatchOptions } from "vue";
 import { VuexModule } from "./VuexModule";
 
@@ -9,6 +9,7 @@ export interface ModuleOptions {
 export interface RegisterOptions {
   store: Store<any>;
   name: string;
+  options: VuexModuleOptions
 }
 
 export interface IVuexModule extends Dictionary<any> {
@@ -157,8 +158,8 @@ export class VuexClassModuleFactory {
           ...context,
           stateSetter: this.moduleOptions.generateMutationSetters
             ? (field: string, val: any) => {
-                context.commit(this.getMutationSetterName(field), val);
-              }
+              context.commit(this.getMutationSetterName(field), val);
+            }
             : undefined
         };
         const thisObj = this.buildThisProxy(proxyDefinition);
@@ -168,7 +169,7 @@ export class VuexClassModuleFactory {
     });
 
     // register module
-    const { store, name } = this.registerOptions;
+    const { store, name, options } = this.registerOptions;
     if (store.state[name]) {
       if (VuexModule.__useHotUpdate || (typeof module !== "undefined" && module.hot)) {
         store.hotUpdate({
@@ -180,7 +181,7 @@ export class VuexClassModuleFactory {
         throw Error(`[vuex-class-module]: A module with name '${name}' already exists.`);
       }
     } else {
-      store.registerModule(this.registerOptions.name, vuexModule);
+      store.registerModule(name, vuexModule, options);
     }
   }
 
@@ -189,8 +190,8 @@ export class VuexClassModuleFactory {
 
     const stateSetter = this.moduleOptions.generateMutationSetters
       ? (field: string, val: any) => {
-          store.commit(`${name}/${this.getMutationSetterName(field)}`, val);
-        }
+        store.commit(`${name}/${this.getMutationSetterName(field)}`, val);
+      }
       : undefined;
 
     const accessorModule = this.buildThisProxy({
